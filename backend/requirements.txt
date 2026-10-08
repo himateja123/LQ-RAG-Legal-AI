@@ -21,7 +21,9 @@ ollama==0.2.1                   # Ollama (recommended for local - free and offli
 openai==1.14.0                  # OpenAI (for premium accuracy)
 
 # Embeddings
-sentence-transformers==3.0.1    # Light and efficient embeddings
+sentence-transformers==3.0.1
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.5.1+cpu
 scikit-learn==1.4.2
 
 # Vector Store
