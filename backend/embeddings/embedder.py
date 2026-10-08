@@ -8,8 +8,6 @@ logger = logging.getLogger(__name__)
 
 TARGET_DIM = int(os.getenv("EMBEDDING_TARGET_DIM", "384"))
 DEFAULT_CANDIDATES = (
-    "law-ai/InLegalBERT,"
-    "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2,"
     "sentence-transformers/all-MiniLM-L6-v2"
 )
 MODEL_CANDIDATES = [
