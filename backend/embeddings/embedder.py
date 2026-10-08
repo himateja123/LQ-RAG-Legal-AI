@@ -2,57 +2,42 @@ import logging
 import os
 from typing import List, Optional
 
-from sentence_transformers import SentenceTransformer
+from fastembed import TextEmbedding
 
 logger = logging.getLogger(__name__)
 
 TARGET_DIM = int(os.getenv("EMBEDDING_TARGET_DIM", "384"))
 
-DEFAULT_CANDIDATES = (
-    "sentence-transformers/all-MiniLM-L6-v2"
-)
+MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 
-MODEL_CANDIDATES = [
-    item.strip()
-    for item in os.getenv(
-        "EMBEDDING_MODEL_CANDIDATES",
-        DEFAULT_CANDIDATES
-    ).split(",")
-    if item.strip()
-]
-
-_model: Optional[SentenceTransformer] = None
+_model: Optional[TextEmbedding] = None
 
 
-def _load_embedding_model() -> SentenceTransformer:
+def _load_embedding_model() -> TextEmbedding:
     global _model
 
     if _model is not None:
         return _model
 
-    errors = []
+    logger.info(f"Loading FastEmbed model: {MODEL_NAME}")
 
-    for model_name in MODEL_CANDIDATES:
-        try:
-            logger.info(f"Loading embedding model: {model_name}")
-
-            _model = SentenceTransformer(
-                model_name,
-                device="cpu"
-            )
-
-            return _model
-
-        except Exception as exc:
-            errors.append(f"{model_name}: {exc}")
-            logger.warning(
-                f"Embedding model load failed ({model_name}): {exc}"
-            )
-
-    raise RuntimeError(
-        "No embedding model could be loaded. "
-        + " | ".join(errors)
+    _model = TextEmbedding(
+        model_name=MODEL_NAME,
+        threads=1,
     )
+
+    return _model
+
+
+def _normalize(vector) -> List[float]:
+    values = vector.tolist() if hasattr(vector, "tolist") else list(vector)
+
+    norm = sum(x * x for x in values) ** 0.5
+
+    if norm > 0:
+        values = [x / norm for x in values]
+
+    return values
 
 
 def _fit_to_dimension(
@@ -76,17 +61,19 @@ def generate_embedding(text: str) -> List[float]:
 
     model = _load_embedding_model()
 
-    embedding = model.encode(
-        text,
-        normalize_embeddings=True,
-        batch_size=1,
-        show_progress_bar=False
+    embeddings = list(
+        model.embed(
+            [text],
+            batch_size=1,
+        )
     )
 
-    payload = (
-        embedding.tolist()
-        if hasattr(embedding, "tolist")
-        else list(embedding)
-    )
+    if not embeddings:
+        raise RuntimeError("FastEmbed returned no embedding")
 
-    return _fit_to_dimension(payload, TARGET_DIM)
+    embedding = _normalize(embeddings[0])
+
+    return _fit_to_dimension(
+        embedding,
+        TARGET_DIM
+    )
