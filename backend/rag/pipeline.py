@@ -128,14 +128,11 @@ def retrieve_context(
 ) -> List[Dict[str, Any]]:
     try:
         embedding = generate_embedding(query)
-        # Keep user-uploaded files out of general legal knowledge queries.
-        # Uploaded-document mode is opt-in and scoped to the current user.
-        if use_uploaded_context is True:
+        metadata_filters = None
+        if use_uploaded_context:
             metadata_filters = {"law_type": "UPLOADED_DOC"}
             if user_id:
                 metadata_filters["user_id"] = user_id
-        else:
-            metadata_filters = {"law_type": {"$ne": "UPLOADED_DOC"}}
 
         results = hybrid_search(
             query_text=query,
@@ -143,6 +140,14 @@ def retrieve_context(
             k=k,
             metadata_filters=metadata_filters,
         )
+
+        if use_uploaded_context and user_id and not results:
+            results = hybrid_search(
+                query_text=query,
+                query_embedding=embedding,
+                k=k,
+                metadata_filters={"law_type": "UPLOADED_DOC"},
+            )
 
         return results
     except Exception as exc:
