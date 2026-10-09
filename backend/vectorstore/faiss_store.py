@@ -38,18 +38,14 @@ def _matches_filters(doc: Dict[str, Any], metadata_filters: Optional[Dict[str, A
 
     for key, expected in metadata_filters.items():
         value = doc.get(key)
-        if isinstance(expected, dict):
-            if "$ne" in expected and value == expected["$ne"]:
-                return False
-            if "$in" in expected and value not in expected["$in"]:
-                return False
-        elif isinstance(expected, (list, tuple, set)):
+        if isinstance(expected, (list, tuple, set)):
             if value not in expected:
                 return False
         elif expected is None:
             continue
-        elif value != expected:
-            return False
+        else:
+            if value != expected:
+                return False
     return True
 
 
