@@ -7,11 +7,7 @@ from sentence_transformers import SentenceTransformer
 logger = logging.getLogger(__name__)
 
 TARGET_DIM = int(os.getenv("EMBEDDING_TARGET_DIM", "384"))
-DEFAULT_CANDIDATES = (
-    "law-ai/InLegalBERT,"
-    "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2,"
-    "sentence-transformers/all-MiniLM-L6-v2"
-)
+DEFAULT_CANDIDATES = "sentence-transformers/all-MiniLM-L6-v2"
 MODEL_CANDIDATES = [
     item.strip()
     for item in os.getenv("EMBEDDING_MODEL_CANDIDATES", DEFAULT_CANDIDATES).split(",")
@@ -24,7 +20,6 @@ def _load_embedding_model() -> SentenceTransformer:
     for model_name in MODEL_CANDIDATES:
         try:
             logger.info(f"Loading embedding model: {model_name}")
-            
             return SentenceTransformer(model_name)
         except Exception as exc:
             errors.append(f"{model_name}: {exc}")
